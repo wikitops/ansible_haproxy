@@ -68,7 +68,7 @@ To deploy the Haproxy instance with an HTTPS frontend, you just have to run the 
 ansible-playbook haproxy_https.yml
 ```
 
-If all run like it is expected, you should access the Haproxy web interface : http://10.0.0.91:10000/
+If all run like it is expected, you should access the Haproxy web interface : https://10.0.0.91:10000/
 
 #### Destroy
 
