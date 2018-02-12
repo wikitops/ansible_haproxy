@@ -1,0 +1,46 @@
+---
+
+- name: Install haproxy package
+  apt:
+    name: haproxy
+    state: present
+  notify: Reload systemd + Restart haproxy
+
+- name: Add haproxy configue file to rsyslog
+  template:
+    src: "etc/rsyslog.d/30-haproxy.conf"
+    dest: "/etc/rsyslog.d/30-haproxy.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Restart rsyslog
+
+- name: Copy haproxy logrotate conf file
+  template:
+    src: "etc/logrotate.d/haproxy"
+    dest: "/etc/logrotate.d/haproxy"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Configure haproxy
+  template:
+    src: "etc/haproxy/haproxy.cfg.j2"
+    dest: "/etc/haproxy/haproxy.cfg"
+    owner: root
+    group: root
+    mode: 0644
+  notify: Reload haproxy
+  tags: config
+
+- name: Configure Haproxy systemd for HTTPS
+  template:
+    src: "lib/systemd/system/haproxy.service"
+    dest: "/lib/systemd/system/haproxy.service"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Reload systemd + Restart haproxy
+  when: with_ssl

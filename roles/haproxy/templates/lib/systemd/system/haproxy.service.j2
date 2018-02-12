@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=HAProxy Load Balancer
+Documentation=man:haproxy(1)
+Documentation=file:/usr/share/doc/haproxy/configuration.txt.gz
+After=network.target rsyslog.service
+Wants=rsyslog.service
+
+[Service]
+Environment=CONFIG=/etc/haproxy/haproxy.cfg
+EnvironmentFile=-/etc/default/haproxy
+ExecStartPre=/bin/bash -c "/usr/bin/openssl rsa -in {{ ssl_cert_key }} -out {{ ssl_temp_key }} -passin file:{{ ssl_password }} && /bin/cat {{ ssl_temp_key }} {{ ssl_cert }} > {{ ssl_bundle }} && /usr/sbin/haproxy -f ${CONFIG} -c -q"
+ExecStart=/usr/sbin/haproxy-systemd-wrapper -f ${CONFIG} -p /run/haproxy.pid $EXTRAOPTS
+ExecStartPost=/bin/rm {{ ssl_temp_key }} {{ ssl_bundle }}
+ExecReload=/bin/bash -c "/usr/bin/openssl rsa -in {{ ssl_cert_key }} -out {{ ssl_temp_key }} -passin file:{{ ssl_password }} && /bin/cat {{ ssl_temp_key }} {{ ssl_cert }} > {{ ssl_bundle }} && /usr/sbin/haproxy -f ${CONFIG} -c -q"
+ExecReload=/bin/kill -USR2 $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

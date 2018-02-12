@@ -1,0 +1,19 @@
+---
+
+# SSL
+with_ssl: false
+ssl_directory: /etc/ssl
+ssl_cert: "{{ ssl_directory }}/YOURNAME.cert"
+ssl_cert_key: "{{ ssl_directory }}/YOURNAME.key"
+ssl_temp_key: "{{ ssl_directory }}/YOURNAME.temp-key"
+ssl_password: "{{ ssl_directory }}/YOURNAME.pass"
+ssl_bundle: "{{ ssl_directory }}/YOURNAME.bundle"
+
+# Statistics
+haproxy_stats: enable
+haproxy_stats_uri: /
+haproxy_stats_listen_port: 10000
+
+# Backend
+haproxy_trafic_rate: 100
+haproxy_balance: leastconn

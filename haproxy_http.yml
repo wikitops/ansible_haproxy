@@ -1,0 +1,9 @@
+---
+
+- hosts: haproxy
+  remote_user: vagrant
+  become: yes
+  vars:
+    haproxy_trafic_rate: 100
+  roles:
+    - haproxy

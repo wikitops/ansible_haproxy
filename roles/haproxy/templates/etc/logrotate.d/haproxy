@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+
+/var/log/haproxy/haproxy.log {
+	daily
+	rotate 7
+	size 500M
+	missingok
+	notifempty
+	compress
+	delaycompress
+}

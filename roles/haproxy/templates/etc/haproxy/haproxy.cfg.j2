@@ -1,0 +1,95 @@
+# {{ ansible_managed }}
+
+global
+    log /dev/log  local0 notice
+    chroot /var/lib/haproxy
+    stats socket /var/run/haproxy.sock mode 666 level admin
+    stats timeout 1m
+    tune.ssl.default-dh-param 2048
+    tune.ssl.cachesize 1000000
+    tune.ssl.lifetime 600
+    tune.ssl.maxrecord 1536
+    maxconn 50000
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    log global
+    mode http
+    option  httplog
+    option dontlognull
+    timeout http-request 5s
+    timeout connect 5s
+    timeout client  5s
+    timeout server  5s
+    timeout http-keep-alive 600
+    errorfile 400 /etc/haproxy/errors/400.http
+    errorfile 403 /etc/haproxy/errors/403.http
+    errorfile 408 /etc/haproxy/errors/408.http
+    errorfile 500 /etc/haproxy/errors/500.http
+    errorfile 502 /etc/haproxy/errors/502.http
+    errorfile 503 /etc/haproxy/errors/503.http
+    errorfile 504 /etc/haproxy/errors/504.http
+
+listen stats
+    bind 127.0.0.1:{{ haproxy_stats_listen_port }}
+    bind {{ inventory_hostname }}:{{ haproxy_stats_listen_port }}
+    stats {{ haproxy_stats }}
+    stats uri {{ haproxy_stats_uri }}
+    stats realm Haproxy\ Statistics
+    stats refresh 5s
+
+frontend www-http
+    bind *:80
+    http-request set-header X-Real-IP %[src]
+    reqadd X-Forwarded-Proto:\ http
+    use_backend backend_default
+
+{% if with_ssl %}
+frontend www-https
+    bind *:443 ssl crt {{ ssl_bundle }}
+    http-request set-header X-Real-IP %[src]
+    reqadd X-Forwarded-Proto:\ https
+    redirect scheme https if !{ ssl_fc }
+    use_backend backend_default
+{% endif %}
+
+backend backend_default
+    balance {{ haproxy_balance }}
+    option forwardfor
+    option httpchk HEAD /health HTTP/1.0
+
+    {% if haproxy_trafic_rate == 100 %}
+    ## 100%
+    {% for host in groups['backend'] %}
+    server {{ host }} {{ host }}:80  weight 32  check
+    {% endfor %}
+    {% elif haproxy_trafic_rate == 75 %}
+    ## 75%
+    server local    	127.0.0.1:80 weight 64  check
+    {% for host in groups['backend'] %}
+    server {{ host }} {{ host }}:80  weight 24  check
+    {% endfor %}
+    {% elif haproxy_trafic_rate == 50 %}
+    ## 50%
+    server local    	127.0.0.1:80 weight 128 check
+    {% for host in groups['backend'] %}
+    server {{ host }} {{ host }}:80  weight 16  check
+    {% endfor %}
+    {% elif haproxy_trafic_rate == 25 %}
+    ## 25%
+    server local    	127.0.0.1:80 weight 192 check
+    {% for host in groups['backend'] %}
+    server {{ host }} {{ host }}:80  weight 8  check
+    {% endfor %}
+    {% elif haproxy_trafic_rate == 1 %}
+    ## 1 %
+    server local    	127.0.0.1:80 weight 248 check
+    {% for host in groups['backend'] %}
+    server {{ host }} {{ host }}:80  weight 1  check
+    {% endfor %}
+    {% else %}
+    ## 0 %
+    server local    	127.0.0.1:80 weight 256 check
+    {% endif %}
