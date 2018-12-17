@@ -1,5 +1,9 @@
 ---
 
+###
+# HAPROXY
+###
+
 # SSL
 with_ssl: false
 ssl_directory: /etc/ssl
